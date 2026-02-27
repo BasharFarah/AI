@@ -13,7 +13,7 @@ app.post('/chat', async (req, res) => {
 
         const response = await axios.post('https://api.anthropic.com/v1/messages', {
             // استخدام الاسم العام للموديل لضمان القبول
-            model: "claude-3-haiku-20240307", 
+            model: "claude-instant-1.2",
             max_tokens: 1024,
             messages: [{ role: "user", content: req.body.message }]
         }, {
