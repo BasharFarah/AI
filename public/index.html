@@ -2,55 +2,88 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>ملخصاتي - مساعد Claude</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملخصاتي AI | مساعدك الذكي</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; height: 100vh; margin: 0; }
-        #chat { flex: 1; overflow-y: auto; padding: 20px; }
-        .msg { margin-bottom: 15px; padding: 10px; border-radius: 8px; max-width: 80%; }
-        .user { background: #333; align-self: flex-start; }
-        .ai { background: #6200ea; align-self: flex-end; }
-        .error { background: #b00020; color: white; border: 1px solid white; }
-        .input-area { padding: 20px; background: #1e1e1e; display: flex; }
-        input { flex: 1; padding: 10px; border: none; border-radius: 4px; }
-        button { padding: 10px 20px; margin-right: 10px; cursor: pointer; background: #6200ea; color: white; border: none; border-radius: 4px; }
+        :root { --primary: #7c4dff; --bg: #0f111a; --card: #1a1c2e; --text: #e0e0e0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Header */
+        .header { background: var(--card); padding: 15px 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-bottom: 2px solid var(--primary); }
+        .header h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+
+        /* Chat Area */
+        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .message { max-width: 80%; padding: 12px 18px; border-radius: 15px; line-height: 1.6; position: relative; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .user-msg { background: var(--primary); color: white; align-self: flex-start; border-bottom-right-radius: 2px; }
+        .ai-msg { background: var(--card); align-self: flex-end; border-bottom-left-radius: 2px; border: 1px solid #30363d; }
+        .error-msg { background: #cf6679; color: white; align-self: center; text-align: center; font-size: 0.9rem; }
+
+        /* Input Area */
+        .input-group { background: var(--card); padding: 15px; display: flex; gap: 10px; align-items: center; }
+        input { flex: 1; background: #0b0d14; border: 1px solid #30363d; padding: 12px; border-radius: 25px; color: white; outline: none; }
+        input:focus { border-color: var(--primary); }
+        button { background: var(--primary); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; transition: 0.3s; }
+        button:hover { transform: scale(1.1); background: #9575cd; }
+
+        /* Typing Indicator */
+        .typing { font-size: 0.8rem; color: #888; display: none; padding-left: 20px; }
     </style>
 </head>
 <body>
-    <div id="chat"></div>
-    <div class="input-area">
-        <input type="text" id="user-input" placeholder="اكتب رسالتك هنا...">
-        <button onclick="sendMessage()">إرسال</button>
+    <div class="header">
+        <h1><i class="fas fa-robot"></i> ملخصاتي AI</h1>
+    </div>
+
+    <div id="chat-container">
+        <div class="message ai-msg">مرحباً بك! أنا مساعدك الذكي. ضع النص أو اسم الكتاب وسأقوم بتلخيصه لك فوراً.</div>
+    </div>
+    
+    <div id="typing-indicator" class="typing">جاري التفكير...</div>
+
+    <div class="input-group">
+        <input type="text" id="user-input" placeholder="اكتب سؤالك هنا..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
     </div>
 
     <script>
         async function sendMessage() {
             const input = document.getElementById('user-input');
-            const chat = document.getElementById('chat');
-            if (!input.value) return;
+            const container = document.getElementById('chat-container');
+            const typing = document.getElementById('typing-indicator');
+            const text = input.value.trim();
 
-            const userText = input.value;
-            chat.innerHTML += `<div class="msg user"><b>أنت:</b> ${userText}</div>`;
+            if (!text) return;
+
+            // إضافة رسالة المستخدم
+            container.innerHTML += `<div class="message user-msg">${text}</div>`;
             input.value = '';
+            typing.style.display = 'block';
+            container.scrollTop = container.scrollHeight;
 
             try {
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: userText })
+                    body: JSON.stringify({ message: text })
                 });
 
                 const data = await response.json();
-                
+                typing.style.display = 'none';
+
                 if (response.ok) {
-                    chat.innerHTML += `<div class="msg ai"><b>Claude:</b> ${data.reply}</div>`;
+                    container.innerHTML += `<div class="message ai-msg">${data.reply}</div>`;
                 } else {
-                    // هنا سيظهر الخطأ الذي أرسله السيرفر بدلاً من كلمة undefined
-                    chat.innerHTML += `<div class="msg error"><b>⚠️ خطأ تقني:</b> ${data.error}</div>`;
+                    container.innerHTML += `<div class="message error-msg">⚠️ خطأ: ${data.error}</div>`;
                 }
             } catch (err) {
-                chat.innerHTML += `<div class="msg error"><b>⚠️ فشل الاتصال بالسيرفر:</b> ${err.message}</div>`;
+                typing.style.display = 'none';
+                container.innerHTML += `<div class="message error-msg">⚠️ فشل الاتصال بالسيرفر</div>`;
             }
-            chat.scrollTop = chat.scrollHeight;
+            container.scrollTop = container.scrollHeight;
         }
     </script>
 </body>

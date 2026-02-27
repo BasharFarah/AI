@@ -8,14 +8,13 @@ app.use(express.static('public'));
 
 app.post('/chat', async (req, res) => {
     try {
-        // التحقق من وجود المفتاح في إعدادات Railway
         if (!process.env.CLAUDE_API_KEY) {
-            return res.status(500).json({ error: "خطأ: مفتاح CLAUDE_API_KEY غير موجود في إعدادات Variables بـ Railway." });
+            return res.status(500).json({ error: "API Key مفقود في إعدادات السيرفر." });
         }
 
         const response = await axios.post('https://api.anthropic.com/v1/messages', {
-            model: "claude-3-5-sonnet-20240620",
-            max_tokens: 1024,
+            model: "claude-3-5-sonnet-latest", // التحديث الجديد
+            max_tokens: 1500,
             messages: [{ role: "user", content: req.body.message }]
         }, {
             headers: {
@@ -27,14 +26,13 @@ app.post('/chat', async (req, res) => {
 
         res.json({ reply: response.data.content[0].text });
     } catch (error) {
-        // إرسال تفاصيل الخطأ بدقة للواجهة
-        let details = error.message;
+        let errorMsg = "حدث خطأ غير متوقع";
         if (error.response && error.response.data) {
-            details = JSON.stringify(error.response.data);
+            errorMsg = error.response.data.error.message;
         }
-        res.status(500).json({ error: `حدث خطأ في الاتصال بـ Claude: ${details}` });
+        res.status(500).json({ error: errorMsg });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
