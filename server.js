@@ -1,6 +1,5 @@
 const express = require('express');
 const axios = require('axios');
-const path = require('path');
 const app = express();
 
 app.use(express.json());
@@ -9,12 +8,13 @@ app.use(express.static('public'));
 app.post('/chat', async (req, res) => {
     try {
         if (!process.env.CLAUDE_API_KEY) {
-            return res.status(500).json({ error: "API Key مفقود في إعدادات السيرفر." });
+            return res.status(500).json({ error: "API Key مفقود في Railway" });
         }
 
         const response = await axios.post('https://api.anthropic.com/v1/messages', {
-       model: "claude-3-haiku-20240307",
-            max_tokens: 1500,
+            // استخدام الاسم العام للموديل لضمان القبول
+            model: "claude-3-haiku-20240307", 
+            max_tokens: 1024,
             messages: [{ role: "user", content: req.body.message }]
         }, {
             headers: {
@@ -26,13 +26,14 @@ app.post('/chat', async (req, res) => {
 
         res.json({ reply: response.data.content[0].text });
     } catch (error) {
-        let errorMsg = "حدث خطأ غير متوقع";
+        // إذا استمر الخطأ، سنعرض رسالة واضحة جداً
+        let msg = error.message;
         if (error.response && error.response.data) {
-            errorMsg = error.response.data.error.message;
+            msg = JSON.stringify(error.response.data.error.message);
         }
-        res.status(500).json({ error: errorMsg });
+        res.status(500).json({ error: msg });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
