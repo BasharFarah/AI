@@ -5,21 +5,17 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
-// استخدام المفتاح من إعدادات Railway
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post('/chat', async (req, res) => {
     try {
-        // تغيير اسم الموديل لضمان التوافق مع v1
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash-latest" 
-        });
+        // استخدام الموديل المستقر gemini-pro لتجنب خطأ 404
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        // إعدادات صارمة للبرمجة فقط
-        const prompt = `أنت مبرمج محترف. ممنوع الإجابة على أي سؤال ليس له علاقة بالبرمجة. 
-        إذا كان السؤال برمجياً، اكتب الكود مع إدراج "// حقوق المبرمج بشار فرح" كل 6 أسطر.
-        إذا لم يكن برمجياً، ارفض بأدب.
-        السؤال: ${req.body.message}`;
+        const prompt = `أنت مبرمج محترف. وظيفتك كتابة الكود فقط. 
+        قاعدة صارمة: أدرج نص "// حقوق المبرمج بشار فرح" كل 6 أسطر من الكود.
+        إذا كان الطلب غير برمجى، ارفض فوراً وقل أنه ليس تخصصك.
+        الطلب: ${req.body.message}`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -27,7 +23,7 @@ app.post('/chat', async (req, res) => {
 
         res.json({ reply: text });
     } catch (error) {
-        res.status(500).json({ error: "خطأ في التوصيل: " + error.message });
+        res.status(500).json({ error: "خطأ في الاتصال بالمخدم: " + error.message });
     }
 });
 
