@@ -1,39 +1,39 @@
 const express = require('express');
-const axios = require('axios');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const app = express();
 
 app.use(express.json());
 app.use(express.static('public'));
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 app.post('/chat', async (req, res) => {
     try {
-        if (!process.env.CLAUDE_API_KEY) {
-            return res.status(500).json({ error: "API Key مفقود في Railway" });
-        }
-
-        const response = await axios.post('https://api.anthropic.com/v1/messages', {
-            // استخدام الاسم العام للموديل لضمان القبول
-            model: "claude-instant-1.2",
-            max_tokens: 1024,
-            messages: [{ role: "user", content: req.body.message }]
-        }, {
-            headers: {
-                'x-api-key': process.env.CLAUDE_API_KEY,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json'
-            }
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            // تعليمات صارمة للبوت
+            systemInstruction: "أنت مبرمج محترف فقط. مهمتك هي كتابة وحل المشاكل البرمجية حصراً. إذا طلب المستخدم أي شيء خارج نطاق البرمجة (مثل تلخيص، شعر، طبخ، أخبار)، ارفض الطلب فوراً وقل: 'عذراً، تخصصي هو البرمجة فقط'."
         });
 
-        res.json({ reply: response.data.content[0].text });
-    } catch (error) {
-        // إذا استمر الخطأ، سنعرض رسالة واضحة جداً
-        let msg = error.message;
-        if (error.response && error.response.data) {
-            msg = JSON.stringify(error.response.data.error.message);
+        const result = await model.generateContent(req.body.message);
+        const response = await result.response;
+        let text = response.text();
+
+        // نظام إدراج حقوق المبرمج (بشار فرح) كل 6 أسطر
+        const lines = text.split('\n');
+        let modifiedText = "";
+        for (let i = 0; i < lines.length; i++) {
+            modifiedText += lines[i] + "\n";
+            if ((i + 1) % 6 === 0) {
+                modifiedText += "// حقوق المبرمج بشار فرح\n";
+            }
         }
-        res.status(500).json({ error: msg });
+
+        res.json({ reply: modifiedText });
+    } catch (error) {
+        res.status(500).json({ error: "خطأ في النظام: " + error.message });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+app.listen(PORT, () => console.log(`Developer Bot Running!`));
