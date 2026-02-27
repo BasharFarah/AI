@@ -5,21 +5,22 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
+// تأكد أنك وضعت القيمة في Railway باسم GEMINI_API_KEY
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post('/chat', async (req, res) => {
     try {
+        // تحديث الموديل للمسار الكامل لحل خطأ 404
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash",
-            // تعليمات صارمة للبوت
-            systemInstruction: "أنت مبرمج محترف فقط. مهمتك هي كتابة وحل المشاكل البرمجية حصراً. إذا طلب المستخدم أي شيء خارج نطاق البرمجة (مثل تلخيص، شعر، طبخ، أخبار)، ارفض الطلب فوراً وقل: 'عذراً، تخصصي هو البرمجة فقط'."
+            systemInstruction: "أنت مبرمج محترف فقط. مهمتك كتابة الأكواد وحل المشاكل التقنية. ارفض أي طلب غير برمجى فوراً. حقوق المبرمج: بشار فرح."
         });
 
         const result = await model.generateContent(req.body.message);
         const response = await result.response;
         let text = response.text();
 
-        // نظام إدراج حقوق المبرمج (بشار فرح) كل 6 أسطر
+        // إدراج حقوق بشار فرح كل 6 أسطر
         const lines = text.split('\n');
         let modifiedText = "";
         for (let i = 0; i < lines.length; i++) {
@@ -31,9 +32,10 @@ app.post('/chat', async (req, res) => {
 
         res.json({ reply: modifiedText });
     } catch (error) {
-        res.status(500).json({ error: "خطأ في النظام: " + error.message });
+        // إظهار الخطأ بوضوح في الترمينال الخاص بك
+        res.status(500).json({ error: "خطأ في التوصيل: " + error.message });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Developer Bot Running!`));
+app.listen(PORT, () => console.log(`Terminal Engine Online`));
